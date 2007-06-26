@@ -42,20 +42,20 @@ module Aspect
     
     def before(method_name, &perform_before)
       with_scope do
-        method_prior = self.instance_method(method_name)
-        define_method method_name do
-          perform_before.call(self)
-          method_prior.bind(self).call
+        method_prior = instance_method(method_name)
+        define_method method_name do |*args|
+          perform_before.call(self, *args)
+          method_prior.bind(self).call(*args)
         end
       end
     end
     
     def after(method_name, &perform_after)
       with_scope do
-        method_prior = self.instance_method(method_name)
-        define_method method_name do
-          return_value = method_prior.bind(self).call
-          perform_after.call(self)
+        method_prior = instance_method(method_name)
+        define_method method_name do |*args|
+          return_value = method_prior.bind(self).call(*args)
+          perform_after.call(self, *args)
           return_value
         end
       end
@@ -82,6 +82,14 @@ if __FILE__ == $0
       new
     end
     
+    def announce(message)
+      puts "Client#announce(#{message.inspect})"
+    end
+    
+    def announce_many(*messages)
+      messages.each { |message| announce(message) }
+    end
+    
     def save
       puts 'Client#save'
     end
@@ -98,6 +106,14 @@ if __FILE__ == $0
       puts "after #{instance.class}#save"
     end
     
+    with_instance_of(Client).before(:announce_many) do |instance, *messages|
+      puts "before Client#announce_many(#{messages.inspect})"
+    end
+    
+    with_instance_of(Client).after(:announce) do |instance, message|
+      puts "after Client#announce(#{message.inspect})"
+    end
+    
     with_class(Client).before(:create) do |klass|
       puts "before #{klass}.create"
     end
@@ -108,12 +124,22 @@ if __FILE__ == $0
     
   end
   
-  Client.create.save
+  client = Client.create
+  client.announce('The sky is falling!')
+  client.announce_many('Really, it is!', 'I am not joking!!!')
+  client.save
   
   # Output should be:
   # before Client.create
   # Client.create
-  # after Class.create
+  # after Client.create
+  # Client#announce("The sky is falling!")
+  # after Client#announce("The sky is falling!")
+  # before Client#announce_many(["Really, it is!", "I am not joking!!!"])
+  # Client#announce("Really, it is!")
+  # after Client#announce("Really, it is!")
+  # Client#announce("I am not joking!!!")
+  # after Client#announce("I am not joking!!!")
   # before Client#save
   # Client#save
   # after Client#save
