@@ -12,7 +12,7 @@
 #
 # Here is my non-academic completely morality-free implementation.
 #
-# See line 91 for the API. Feedback is appreciated.
+# See line 99 for the API. Feedback is appreciated.
 #
 # Ryan Allen (aspect@yeahnah.org)
 #
